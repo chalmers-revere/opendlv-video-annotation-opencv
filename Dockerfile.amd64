@@ -45,7 +45,9 @@ RUN apt-get update -y && \
     apt-get upgrade -y && \
     apt-get dist-upgrade -y && \
     apt-get install -y --no-install-recommends \
-        libopencv-dev
+        libopencv-core3.2 \
+        libopencv-highgui3.2 \
+        libopencv-imgproc3.2 \
 
 WORKDIR /usr/bin
 COPY --from=builder /tmp/bin/opendlv-video-annotation-opencv .

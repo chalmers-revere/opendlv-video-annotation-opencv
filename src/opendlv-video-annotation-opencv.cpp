@@ -71,20 +71,6 @@ int32_t main(int32_t argc, char **argv) {
         if (sharedMemory && sharedMemory->valid()) {
             std::clog << argv[0] << ": Attached to shared memory '" << sharedMemory->name() << " (" << sharedMemory->size() << " bytes)." << std::endl;
 
-            // Create an OpenCV image header using the data in the shared memory.
-            IplImage *iplimage{nullptr};
-            CvSize size;
-            size.width = WIDTH;
-            size.height = HEIGHT;
-
-            iplimage = cvCreateImageHeader(size, IPL_DEPTH_8U, 4 /* four channels: ARGB */);
-            sharedMemory->lock();
-            {
-                iplimage->imageData = sharedMemory->data();
-                iplimage->imageDataOrigin = iplimage->imageData;
-            }
-            sharedMemory->unlock();
-
             cv::namedWindow(sharedMemory->name().c_str(), 0);
             cv::resizeWindow(sharedMemory->name().c_str(), WIDTH, HEIGHT);
             cv::waitKey(10);
@@ -114,12 +100,8 @@ int32_t main(int32_t argc, char **argv) {
                 // Lock the shared memory.
                 sharedMemory->lock();
                 {
-                    // Copy image into cvMat structure.
-                    // Be aware of that any code between lock/unlock is blocking
-                    // the camera to provide the next frame. Thus, any
-                    // computationally heavy algorithms should be placed outside
-                    // lock/unlock.
-                    img = cv::cvarrToMat(iplimage);
+                    cv::Mat wrapped(HEIGHT, WIDTH, CV_8UC4, sharedMemory->data());
+                    img = wrapped.clone();
                 }
                 sharedMemory->unlock();
 
@@ -149,10 +131,6 @@ int32_t main(int32_t argc, char **argv) {
                         od4.send(d, lastSampleTimeStamp);
                     }
                 }
-            }
-
-            if (nullptr != iplimage) {
-                cvReleaseImageHeader(&iplimage);
             }
         }
         retCode = 0;
